@@ -1,7 +1,0 @@
-[build]
-target = "x86_64-unknown-uefi"
-
-[target.'cfg(all())']
-# Hier sagen wir dem Linker, dass er kein Standard-Programm baut.
-# "-nostartfiles" verhindert, dass die C-Runtime (crt0) gesucht wird.
-rustflags = ["-C", "link-arg=-nostartfiles"]
