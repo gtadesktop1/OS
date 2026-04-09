@@ -7,7 +7,7 @@ import {
   Power, Moon, RefreshCw, Maximize2, Minimize2, Square, Search, 
   ChevronRight, AlertCircle, Info, HelpCircle, Minus, Maximize,
   FileText, Music, Play, Pause, SkipBack, SkipForward, Volume2,
-  Terminal as KernelIcon, Zap, Cpu as CpuIcon
+  Terminal as KernelIcon, Zap, Cpu as CpuIcon, Cloud, Share2, Database as DbIcon
 } from 'lucide-react';
 import { 
   WindowState, FocusTarget, NodeRole, Node, FileSystemItem, 
@@ -23,7 +23,12 @@ const INITIAL_FS: FileSystemItem[] = [
   { id: 'pictures', name: 'Bilder', type: 'folder', parentId: 'user_home', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
   { id: 'music', name: 'Musik', type: 'folder', parentId: 'user_home', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
   { id: 'desktop_folder', name: 'Desktop', type: 'folder', parentId: 'user_home', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
+  { id: 'cloud_drive', name: 'Cloud Drive', type: 'folder', parentId: 'user_home', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
+  { id: 'nas_storage', name: 'NAS Storage', type: 'folder', parentId: 'root', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
   { id: 'system32', name: 'System32', type: 'folder', parentId: 'root', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
+  { id: 'drivers', name: 'Drivers', type: 'folder', parentId: 'system32', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
+  { id: 'usb_driver', name: 'usb_ntfs.sys', type: 'file', extension: 'sys', parentId: 'drivers', status: 'active', size: 45000, authorId: 'system', createdAt: Date.now() },
+  { id: 'net_driver', name: 'net_p2p.sys', type: 'file', extension: 'sys', parentId: 'drivers', status: 'active', size: 32000, authorId: 'system', createdAt: Date.now() },
   { id: 'apps', name: 'Apps', type: 'folder', parentId: 'root', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
   { id: 'deactivated', name: 'Deactivated', type: 'folder', parentId: 'apps', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
   { id: 'active', name: 'Active', type: 'folder', parentId: 'apps', status: 'active', size: 0, authorId: 'system', createdAt: Date.now() },
@@ -909,6 +914,15 @@ export const Desktop: React.FC = () => {
               {w.title === 'Network Manager' && (
                 <NetworkManager nodes={nodes} />
               )}
+              {w.title === 'Server Manager' && (
+                <ServerManager />
+              )}
+              {w.title === 'Cloud Storage' && (
+                <CloudStorage fs={fs} />
+              )}
+              {w.title === 'DNS Registrar' && (
+                <DNSRegistrar />
+              )}
               {w.title === 'Terminal' && (
                 <Terminal 
                   nodes={nodes} 
@@ -988,6 +1002,9 @@ export const Desktop: React.FC = () => {
             <div className="p-2 space-y-1">
               <StartMenuItem icon={<Globe size={16} />} label="Browser" onClick={() => openWindow('Browser', 'system')} />
               <StartMenuItem icon={<Server size={16} />} label="Network Manager" onClick={() => openWindow('Network Manager', 'system')} />
+              <StartMenuItem icon={<DbIcon size={16} />} label="Server Manager" onClick={() => openWindow('Server Manager', 'system')} />
+              <StartMenuItem icon={<Cloud size={16} />} label="Cloud Storage" onClick={() => openWindow('Cloud Storage', 'system')} />
+              <StartMenuItem icon={<Zap size={16} />} label="DNS Registrar" onClick={() => openWindow('DNS Registrar', 'system')} />
               <StartMenuItem icon={<Package size={16} />} label="App Store" onClick={() => openWindow('Paketmanager', 'system')} />
               <StartMenuItem icon={<HardDrive size={16} />} label="NTFS Explorer" onClick={() => openWindow('NTFS Explorer', 'system')} />
               <StartMenuItem icon={<Code size={16} />} label="IDE Editor" onClick={() => openWindow('Programmer Editor', 'system')} />
@@ -1285,10 +1302,12 @@ const FileManager: React.FC<{
   };
 
   const sidebarItems = [
-    { id: 'root', name: 'Dateisystem', icon: <HardDrive size={16} /> },
+    { id: 'root', name: 'Lokaler Datenträger (C:)', icon: <HardDrive size={16} /> },
+    { id: 'user_home', name: 'Benutzer', icon: <User size={16} /> },
+    { id: 'cloud_drive', name: 'Cloud Drive', icon: <Cloud size={16} /> },
+    { id: 'nas_storage', name: 'NAS Storage', icon: <Server size={16} /> },
     { id: 'active', name: 'Anwendungen', icon: <AppWindow size={16} /> },
-    { id: 'shared', name: 'Netzwerk', icon: <Globe size={16} /> },
-    { id: 'deactivated', name: 'Papierkorb', icon: <Trash2 size={16} /> },
+    { id: 'trash', name: 'Papierkorb', icon: <Trash2 size={16} /> },
   ];
 
   return (
@@ -2093,7 +2112,101 @@ const MediaPlayer: React.FC<{ fs: FileSystemItem[] }> = ({ fs }) => {
   );
 };
 
+const DNSRegistrar: React.FC = () => {
+  const [domain, setDomain] = useState('');
+  const [ip, setIp] = useState('');
+  const [isRegistered, setIsRegistered] = useState(false);
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!domain.includes('.')) {
+      alert('Ungültige Domain. Bitte nutzen Sie das Format domain.ntfs');
+      return;
+    }
+    setIsRegistered(true);
+  };
+
+  return (
+    <div className="p-6 space-y-8 bg-slate-950 h-full overflow-auto">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h3 className="text-lg font-bold text-white uppercase tracking-widest">DNS Registrar</h3>
+          <p className="text-[10px] text-slate-500 uppercase">NTFS-P2P Domain Registry</p>
+        </div>
+        <div className="p-3 bg-purple-600/10 rounded-xl border border-purple-500/20">
+          <Globe size={24} className="text-purple-500" />
+        </div>
+      </div>
+
+      <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+        <h4 className="text-xs font-bold text-white uppercase tracking-widest mb-6">Neue Domain registrieren</h4>
+        <form onSubmit={handleRegister} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-slate-500 uppercase">Domain Name</label>
+            <input 
+              type="text" 
+              value={domain}
+              onChange={e => setDomain(e.target.value)}
+              placeholder="meine-seite.ntfs"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-xs"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-slate-500 uppercase">Ziel IP (A-Record)</label>
+            <input 
+              type="text" 
+              value={ip}
+              onChange={e => setIp(e.target.value)}
+              placeholder="192.168.1.100"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-xs"
+            />
+          </div>
+          <button 
+            type="submit"
+            className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-[10px] font-bold uppercase shadow-lg shadow-purple-900/40 transition-all"
+          >
+            Domain registrieren
+          </button>
+        </form>
+      </div>
+
+      {isRegistered && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl flex items-center gap-4"
+        >
+          <ShieldCheck className="text-emerald-500" size={20} />
+          <div>
+            <p className="text-[10px] font-bold text-emerald-500 uppercase">Erfolgreich registriert</p>
+            <p className="text-[10px] text-slate-400 font-mono">{domain} &rarr; {ip}</p>
+          </div>
+        </motion.div>
+      )}
+
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div className="p-4 bg-slate-800/50 border-b border-slate-800">
+          <h3 className="text-xs font-bold text-white uppercase tracking-widest">Meine Domains</h3>
+        </div>
+        <div className="p-4">
+          <p className="text-center text-[10px] text-slate-600 italic">Keine weiteren Domains gefunden.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const NetworkManager: React.FC<{ nodes: Node[] }> = ({ nodes }) => {
+  const [publicIp, setPublicIp] = useState('Lade...');
+  const [localIp, setLocalIp] = useState('192.168.1.42');
+
+  useEffect(() => {
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => setPublicIp(data.ip))
+      .catch(() => setPublicIp('8.8.8.8 (Simulated)'));
+  }, []);
+
   return (
     <div className="p-6 space-y-8 bg-slate-950 h-full overflow-auto custom-scrollbar">
       <div className="flex items-center justify-between mb-8">
@@ -2113,12 +2226,16 @@ const NetworkManager: React.FC<{ nodes: Node[] }> = ({ nodes }) => {
             <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-500 text-[8px] font-bold rounded">CONNECTED</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Peers</span>
-            <span className="text-xs font-mono text-white">{nodes.length} Active</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Öffentliche IP</span>
+            <span className="text-xs font-mono text-white">{publicIp}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Bandwidth</span>
-            <span className="text-xs font-mono text-white">1.2 Gbps</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase">Lokale IP</span>
+            <span className="text-xs font-mono text-white">{localIp}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-slate-400 uppercase">IPv6</span>
+            <span className="text-xs font-mono text-slate-500">fe80::1ff:fe23:4567:890a</span>
           </div>
         </div>
 
@@ -2150,6 +2267,132 @@ const NetworkManager: React.FC<{ nodes: Node[] }> = ({ nodes }) => {
           ))}
         </div>
       </div>
+    </div>
+  );
+};
+
+const ServerManager: React.FC = () => {
+  const [services, setServices] = useState([
+    { name: 'Apache2', status: 'stopped', port: 80, icon: <Globe size={16} /> },
+    { name: 'MySQL', status: 'stopped', port: 3306, icon: <DbIcon size={16} /> },
+    { name: 'DNS Server', status: 'stopped', port: 53, icon: <Server size={16} /> },
+    { name: 'FTP Server', status: 'stopped', port: 21, icon: <Share2 size={16} /> },
+  ]);
+
+  const toggleService = (name: string) => {
+    setServices(prev => prev.map(s => 
+      s.name === name ? { ...s, status: s.status === 'running' ? 'stopped' : 'running' } : s
+    ));
+  };
+
+  return (
+    <div className="p-6 space-y-6 bg-slate-950 h-full overflow-auto">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h3 className="text-lg font-bold text-white uppercase tracking-widest">Server Manager</h3>
+          <p className="text-[10px] text-slate-500 uppercase">NTFS Server Stack v2.0</p>
+        </div>
+        <div className="p-3 bg-blue-600/10 rounded-xl border border-blue-500/20">
+          <DbIcon size={24} className="text-blue-500" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        {services.map(s => (
+          <div key={s.name} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between hover:bg-slate-800/50 transition-all">
+            <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-xl ${s.status === 'running' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-slate-800 text-slate-500'}`}>
+                {s.icon}
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white uppercase tracking-widest">{s.name}</h4>
+                <p className="text-[10px] text-slate-500 font-mono">Port: {s.port} • {s.status.toUpperCase()}</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => toggleService(s.name)}
+              className={`px-6 py-2 rounded-xl text-[10px] font-bold uppercase transition-all ${
+                s.status === 'running' 
+                  ? 'bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white' 
+                  : 'bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white'
+              }`}
+            >
+              {s.status === 'running' ? 'Stop' : 'Start'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CloudStorage: React.FC<{ fs: FileSystemItem[] }> = ({ fs }) => {
+  const [connected, setConnected] = useState(false);
+  const cloudFiles = fs.filter(f => f.parentId === 'cloud_drive');
+
+  return (
+    <div className="p-6 space-y-6 bg-slate-950 h-full overflow-auto">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h3 className="text-lg font-bold text-white uppercase tracking-widest">Cloud Storage</h3>
+          <p className="text-[10px] text-slate-500 uppercase">Hybrid Cloud Integration</p>
+        </div>
+        <div className="p-3 bg-indigo-600/10 rounded-xl border border-indigo-500/20">
+          <Cloud size={24} className="text-indigo-500" />
+        </div>
+      </div>
+
+      {!connected ? (
+        <div className="flex flex-col items-center justify-center h-64 space-y-6">
+          <Cloud size={64} className="text-slate-800 animate-bounce" />
+          <div className="text-center">
+            <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-2">Nicht verbunden</h4>
+            <p className="text-xs text-slate-500">Verbinden Sie Ihr NTFS-Cloud Konto oder NAS.</p>
+          </div>
+          <button 
+            onClick={() => setConnected(true)}
+            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-bold uppercase shadow-lg shadow-indigo-900/40 transition-all"
+          >
+            Cloud verbinden
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Speicherplatz</span>
+              <span className="text-xs font-mono text-white">1.2 TB / 5 TB</span>
+            </div>
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+              <span className="text-[10px] font-bold text-slate-400 uppercase">Status</span>
+              <span className="text-xs font-mono text-emerald-500">Synchronisiert</span>
+            </div>
+          </div>
+          
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+            <div className="p-4 bg-slate-800/50 border-b border-slate-800">
+              <h3 className="text-xs font-bold text-white uppercase tracking-widest">Cloud Dateien</h3>
+            </div>
+            <div className="p-4">
+              {cloudFiles.length === 0 ? (
+                <p className="text-center text-xs text-slate-600 py-8 italic">Keine Dateien in der Cloud gefunden.</p>
+              ) : (
+                <div className="space-y-2">
+                  {cloudFiles.map(f => (
+                    <div key={f.id} className="flex items-center justify-between p-2 hover:bg-white/5 rounded-lg transition-colors">
+                      <div className="flex items-center gap-3">
+                        <FileText size={14} className="text-indigo-400" />
+                        <span className="text-[10px] font-mono text-slate-300 uppercase">{f.name}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-500">{(f.size / 1024).toFixed(1)} KB</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
