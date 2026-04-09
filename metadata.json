@@ -1,0 +1,5 @@
+{
+  "name": "OS Manager & Network Simulation",
+  "description": "A React-based OS window manager with a custom P2P-like network simulation (DNS, Server, Client roles) and a package manager.",
+  "requestFramePermissions": []
+}
