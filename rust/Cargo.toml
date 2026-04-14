@@ -12,7 +12,8 @@ uart_16550 = "0.2.19"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 pc-keyboard = "0.7.0"
 pic8259 = "0.10.2"
-linked_list_allocator = { version = "0.10.5", default-features = false }
+# In rust/Cargo.toml ändern:
+linked_list_allocator = { version = "0.10.5", default-features = false, features = ["use_spin"] }
 
 [package.metadata.bootloader]
 map-physical-memory = true
